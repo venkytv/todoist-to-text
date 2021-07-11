@@ -2,12 +2,12 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	"log"
 	"os"
 	"regexp"
+	"strings"
 
 	"github.com/atotto/clipboard"
 	"github.com/go-resty/resty/v2"
@@ -30,6 +30,14 @@ type Task struct {
 }
 
 func (t *Task) Parse(cfg *config.Config) {
+	var tags []string
+	for _, tag := range strings.Split(cfg.GetString("tags"), ",") {
+		tags = append(tags, "#"+strings.TrimSpace(tag))
+	}
+	if len(tags) > 0 {
+		t.Content += " " + strings.Join(tags, " ")
+	}
+
 	re := regexp.MustCompile(`\[([^\]]*)\]\(([^\)]*)\)\s*(.*)`)
 	m := re.FindStringSubmatch(t.Content)
 	if len(m) < 1 {
@@ -44,13 +52,13 @@ func (t *Task) Parse(cfg *config.Config) {
 
 func (t Task) Out() string {
 	var out string
-	if len(t.Name) > 0 {
+	if len(t.Url) > 0 {
 		out = fmt.Sprintf("[%s](%s)", t.Name, t.Url)
 		if len(t.Note) > 0 {
 			out += " " + t.Note
 		}
 	} else {
-		out = t.Content
+		out = t.Name
 	}
 	return out
 }
@@ -72,6 +80,7 @@ func getTodoistApiToken(cfg *config.Config) string {
 }
 
 func getInstapaperCredentials(cfg *config.Config) (string, string) {
+	log.Print(cfg.AllKeys())
 	username := cfg.GetString("instapaper-username")
 
 	password := cfg.GetString("instapaper-password")
@@ -84,28 +93,13 @@ func getInstapaperCredentials(cfg *config.Config) (string, string) {
 		password = string(item)
 	}
 
+	log.Print(username)
 	return username, password
 }
 
-func loadConfig() *config.Config {
-	f := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
-	f.String("api-token", "", "todoist API token")
-	f.String("instapaper-username", INSTAPAPER_USERNAME, "Instapaper username")
-	f.String("instapaper-password", "", "Instapaper password")
-
-	return config.Load(f, "TTT")
-}
-
-func postToInstapaper(cfg *config.Config, client *resty.Client, content string) (string, error) {
-	re := regexp.MustCompile(`\((https?://[^\)]+)\)`)
-	m := re.FindStringSubmatch(content)
-	if len(m) < 1 {
-		log.Print("Unable to extract URL from task: ", content)
-		return "", errors.New("error extracting URL from content")
-	}
-	url := m[1]
-
+func postToInstapaper(cfg *config.Config, client *resty.Client, url string) (string, error) {
 	username, password := getInstapaperCredentials(cfg)
+	log.Print(username, password)
 
 	log.Print("Posting to Instapaper: ", url)
 	request := client.R().SetQueryParams(map[string]string{
@@ -135,6 +129,7 @@ func getTask(cfg *config.Config, client *resty.Client, task_id string) Task {
 	token := getTodoistApiToken(cfg)
 	request := client.R().SetHeader("Accept", "application/json").SetAuthToken(token)
 
+	log.Print("Fetching tasks for ID: ", task_id)
 	var task Task
 	req_url := fmt.Sprintf("%s/tasks/%s", TODOIST_API, task_id)
 	resp, err := request.SetResult(&task).Get(req_url)
@@ -146,9 +141,12 @@ func getTask(cfg *config.Config, client *resty.Client, task_id string) Task {
 	}
 
 	task.Parse(cfg)
-	url, err := postToInstapaper(cfg, client, task.Content)
-	if err == nil {
-		task.Url = url
+	if len(task.Url) > 0 {
+		url, err := postToInstapaper(cfg, client, task.Url)
+		if err == nil {
+			log.Print("Instapaper Url: ", url)
+			task.Url = url
+		}
 	}
 
 	log.Printf("Closing task %s: %s", task_id, task.Out())
@@ -163,14 +161,26 @@ func getTask(cfg *config.Config, client *resty.Client, task_id string) Task {
 	return task
 }
 
+func loadConfig() *config.Config {
+	f := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+	f.String("api-token", "", "todoist API token")
+	f.String("instapaper-username", INSTAPAPER_USERNAME, "Instapaper username")
+	f.String("instapaper-password", "", "Instapaper password")
+	f.String("tags", "", "comma-separated list of tags to add to the output")
+
+	return config.Load(f, "TTT")
+}
+
 func main() {
 	cfg := loadConfig()
-	if len(os.Args) < 2 {
+	args := cfg.Args()
+	log.Printf("%v | %v\n", cfg, args)
+	if len(args) < 1 {
 		log.Fatal("Task ID argument mandatory")
 	}
 
 	client := resty.New()
-	task_id := os.Args[1]
+	task_id := args[0]
 
 	t := getTask(cfg, client, task_id).Out()
 	clipboard.WriteAll(t)

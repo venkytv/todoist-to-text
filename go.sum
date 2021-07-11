@@ -241,6 +241,8 @@ github.com/subosito/gotenv v1.2.0 h1:Slr1R9HxAlEKefgq5jn9U+DnETlIUa6HfgEzj0g5d7s
 github.com/subosito/gotenv v1.2.0/go.mod h1:N0PQaV/YGNqwC0u51sEeR/aUtSLEXKX9iv69rRypqCw=
 github.com/venkytv/go-config v0.1.0 h1:ItltRt7xUTaJ3z7Ntwce1zTIlDnXTwKDkU/G+2tygao=
 github.com/venkytv/go-config v0.1.0/go.mod h1:1UWY4tEWXac4kO/mJhfg77ab/FbsMJT3PCgIKsBjIRU=
+github.com/venkytv/go-config v0.2.0 h1:W/HvLYLAKluX6VbZHo4wgX0k1vCcrfNxxYqCt4Ywof4=
+github.com/venkytv/go-config v0.2.0/go.mod h1:GUmadC57+kn0RQwbbxz9SxmH1Y7V4+yEOiq+s5Ys7Bk=
 github.com/yuin/goldmark v1.1.25/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.1.32/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
