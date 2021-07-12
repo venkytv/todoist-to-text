@@ -80,7 +80,6 @@ func getTodoistApiToken(cfg *config.Config) string {
 }
 
 func getInstapaperCredentials(cfg *config.Config) (string, string) {
-	log.Print(cfg.AllKeys())
 	username := cfg.GetString("instapaper-username")
 
 	password := cfg.GetString("instapaper-password")
@@ -93,13 +92,11 @@ func getInstapaperCredentials(cfg *config.Config) (string, string) {
 		password = string(item)
 	}
 
-	log.Print(username)
 	return username, password
 }
 
 func postToInstapaper(cfg *config.Config, client *resty.Client, url string) (string, error) {
 	username, password := getInstapaperCredentials(cfg)
-	log.Print(username, password)
 
 	log.Print("Posting to Instapaper: ", url)
 	request := client.R().SetQueryParams(map[string]string{
@@ -174,7 +171,6 @@ func loadConfig() *config.Config {
 func main() {
 	cfg := loadConfig()
 	args := cfg.Args()
-	log.Printf("%v | %v\n", cfg, args)
 	if len(args) < 1 {
 		log.Fatal("Task ID argument mandatory")
 	}
